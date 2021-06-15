@@ -7,7 +7,7 @@ PyDSWS
 
 import requests
 import json
-import urllib.parse
+import traceback
 import datetime
 import pandas as pd
 
@@ -37,8 +37,12 @@ class Datastream:
 
     @staticmethod
     def from_json_to_df(response_json):
+        if 'Code' in response_json.keys() and response_json['Code']=='InvalidCredentials':
+            print(response_json['Message'])
+            return pd.DataFrame()
+
         # If dates is not available, the request is not constructed correctly
-        if response_json['Dates']:
+        if 'Dates' in response_json.keys() and response_json['Dates']:
             dates = response_json['Dates']
             dates_converted = []
             for d in dates:
@@ -121,6 +125,11 @@ class Datastream:
         response = requests.get(url, params=fields).json()
 
         # Run 'from_json_to_df()' to convert the JSON response to a Pandas DataFrame
-        df = self.from_json_to_df(response)
+        try:
+            df = self.from_json_to_df(response)
+        except KeyError as e:
+            traceback.print_stack()
+            print(response)
+            return None
 
         return df
